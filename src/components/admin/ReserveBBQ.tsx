@@ -68,7 +68,7 @@ const ReserveBBQ: React.FC = () => {
      // setError(null); // Removed
      // setSuccess(null); // Removed
      try {
-       const { error: deleteError } = await supabase.from('reservations').delete().eq('id', reservationId);
+       const { error: deleteError } = await supabase.from('reservations').delete().eq('id', reservationId).eq('resource_name', RESOURCE_NAME); // Add resource filter
        if (deleteError) throw deleteError;
        enqueueSnackbar("Reserva cancelada com sucesso.", { variant: 'success' }); // Success snackbar
        fetchReservations(); // Refresh list
@@ -89,7 +89,24 @@ const ReserveBBQ: React.FC = () => {
         <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
            {fetchLoading ? ( <List dense> <SkeletonRow /> <SkeletonRow /> <SkeletonRow /> </List> )
             : reservations.length === 0 ? ( <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary' }}><InfoIcon sx={{ mr: 1 }} /><Typography variant="body2">Nenhuma reserva encontrada.</Typography></Box> )
-            : ( <List dense> {reservations.map((res, index) => ( <React.Fragment key={res.id}> <ListItem secondaryAction={ <Tooltip title="Cancelar Reserva"> <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(res.id)} disabled={loading}> {loading && reservations.find(r => r.id === res.id) ? <CircularProgress size={20} color="inherit"/> : <DeleteIcon fontSize="small" />} </IconButton> </Tooltip> } > <ListItemText primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')} (${res.start_time?.substring(0,5) || '?'} - ${res.end_time?.substring(0,5) || '?'})`} secondary={`Reservado por: ${res.full_name || 'Usuário Desconhecido'} (${res.block_number || '?'}/${res.apartment_number || '?'})`} /> </ListItem> {index < reservations.length - 1 && <Divider component="li" />} </React.Fragment> ))} </List> )}
+            : ( <List dense> {reservations.map((res, index) => {
+                 // Define secondary action separately
+                 const cancelAction = (
+                    <Tooltip title="Cancelar Reserva">
+                         <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(res.id)} disabled={loading}>
+                           {loading && reservations.find(r => r.id === res.id) ? <CircularProgress size={20} color="inherit"/> : <DeleteIcon fontSize="small" />}
+                         </IconButton>
+                    </Tooltip>
+                 );
+                 return (
+                    <React.Fragment key={res.id}>
+                        <ListItem secondaryAction={cancelAction} >
+                            <ListItemText primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')} (${res.start_time?.substring(0,5) || '?'} - ${res.end_time?.substring(0,5) || '?'})`} secondary={`Reservado por: ${res.full_name || 'Usuário Desconhecido'} (${res.block_number || '?'}/${res.apartment_number || '?'})`} />
+                        </ListItem>
+                        {index < reservations.length - 1 && <Divider component="li" />}
+                    </React.Fragment>
+                 );
+                })} </List> )}
          </Box>
       </Paper>
     </Box>
