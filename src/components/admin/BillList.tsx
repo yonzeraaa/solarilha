@@ -14,6 +14,7 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  InfoIcon, // Use Filled version
   Skeleton // Import Skeleton
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -141,7 +142,10 @@ const BillList: React.FC = () => {
                  // Show message if no bills and not loading
                  <TableRow>
                     <TableCell colSpan={6} align="center">
-                        <Typography color="text.secondary" sx={{ p: 2 }}>Nenhum boleto enviado ainda.</Typography>
+                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary' }}>
+                            <InfoIcon sx={{ mr: 1 }} />
+                            <Typography variant="body2">Nenhum boleto enviado ainda.</Typography>
+                        </Box>
                     </TableCell>
                  </TableRow>
               ) : (

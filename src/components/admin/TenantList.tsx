@@ -22,6 +22,7 @@ import {
   DialogTitle,
   TextField,
   Button,
+  InfoIcon, // Use Filled version
   Skeleton // Import Skeleton
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -194,7 +195,10 @@ const TenantList: React.FC = () => {
                  // Show message if no tenants and not loading
                  <TableRow>
                     <TableCell colSpan={6} align="center">
-                        <Typography color="text.secondary" sx={{ p: 2 }}>Nenhum inquilino cadastrado ainda.</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary' }}>
+                            <InfoIcon sx={{ mr: 1 }} />
+                            <Typography variant="body2">Nenhum inquilino cadastrado ainda.</Typography>
+                        </Box>
                     </TableCell>
                  </TableRow>
               ) : (

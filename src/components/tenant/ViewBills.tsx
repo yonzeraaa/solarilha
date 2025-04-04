@@ -14,6 +14,7 @@ import {
   IconButton,
   Tooltip,
   Paper,
+  InfoIcon, // Use Filled version
   Skeleton // Import Skeleton
 } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -110,7 +111,10 @@ const ViewBills: React.FC = () => {
           </Paper>
       ) : bills.length === 0 ? (
           // Show message if no bills and not loading
-          <Typography color="text.secondary" sx={{ mt: 2 }}>Nenhum boleto disponível no momento.</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary', mt: 2 }}>
+              <InfoIcon sx={{ mr: 1 }} />
+              <Typography variant="body2">Nenhum boleto disponível no momento.</Typography>
+          </Box>
       ) : (
           // Render actual bill list
          <Paper sx={{ mt: 2 }}>

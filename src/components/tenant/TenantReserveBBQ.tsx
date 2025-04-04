@@ -15,6 +15,8 @@ import {
   Skeleton, // Import Skeleton
   Chip,
   Tooltip,
+  InfoIcon, // Import icon
+  InfoOutlinedIcon, // Import icon
   IconButton,
   // Grid, // Removed Grid
   TextField
@@ -324,7 +326,10 @@ const TenantReserveBBQ: React.FC = () => {
                   <MyReservationSkeletonRow />
               </List>
             ) : myReservations.length === 0 ? (
-              <Typography align="center" color="text.secondary" sx={{ p: 2 }}>Você não possui reservas.</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary' }}>
+                  <InfoIcon sx={{ mr: 1 }} />
+                  <Typography variant="body2">Você não possui reservas.</Typography>
+              </Box>
             ) : (
               <List dense sx={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {myReservations.map((res, index, arr) => {

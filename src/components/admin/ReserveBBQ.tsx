@@ -12,6 +12,7 @@ import {
   Paper,
   Divider,
   Tooltip,
+  InfoIcon, // Use Filled version
   Skeleton // Import Skeleton
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -109,7 +110,10 @@ const ReserveBBQ: React.FC = () => {
                 <SkeletonRow />
              </List>
            ) : reservations.length === 0 ? (
-             <Typography align="center" color="text.secondary" sx={{ p: 2 }}>Nenhuma reserva encontrada.</Typography>
+             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary' }}>
+                 <InfoIcon sx={{ mr: 1 }} />
+                 <Typography variant="body2">Nenhuma reserva encontrada.</Typography>
+             </Box>
            ) : (
              <List dense>
                {reservations.map((res, index) => (
