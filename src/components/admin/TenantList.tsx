@@ -14,45 +14,53 @@ import {
   TableBody,
   Paper,
   IconButton,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
+  Button
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-// import EditIcon from '@mui/icons-material/Edit'; // Optional: Add later if needed
+import LockResetIcon from '@mui/icons-material/LockReset'; // Icon for password reset
 
 interface Tenant {
-  id: string; // User ID from profiles table
+  id: string;
   full_name: string | null;
-  email: string | null; // Need to fetch email from auth.users
+  email: string | null;
   block_number: string | null;
   apartment_number: string | null;
   created_at: string;
 }
 
-// Interface combining profile and auth user data
 interface TenantDisplayData extends Tenant {
-    email: string; // Make email non-null for display
+    email: string;
 }
 
+// Interface for the user being targeted for password reset
+interface TargetUser {
+    id: string;
+    name: string | null;
+}
 
 const TenantList: React.FC = () => {
   const [tenants, setTenants] = useState<TenantDisplayData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null); // Track which user is being deleted
+  const [success, setSuccess] = useState<string | null>(null); // For general success messages
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState<string | null>(null); // Loading state for password reset
+  const [openResetDialog, setOpenResetDialog] = useState(false);
+  const [targetUser, setTargetUser] = useState<TargetUser | null>(null); // User whose password will be reset
+  const [newPassword, setNewPassword] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null); // Specific error for reset dialog
 
   const fetchTenants = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch profiles for tenants
-      // NOTE: This fetches profiles but not emails directly.
-      // Fetching emails requires joining with auth.users which isn't directly possible
-      // with RLS enabled in the client without potentially exposing all emails.
-      // A secure way is often an Edge Function or fetching emails separately if needed.
-      // For now, we'll fetch profiles and accept email might be missing initially.
-      // Let's modify this to use an RPC call for security later if needed.
-
-      // Fetch profiles first
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, block_number, apartment_number, created_at')
@@ -61,15 +69,11 @@ const TenantList: React.FC = () => {
 
       if (profilesError) throw profilesError;
 
-      // TODO: Securely fetch corresponding emails for these user IDs.
-      // This is a placeholder - a secure implementation would use an Edge Function
-      // that takes the list of IDs and returns emails for only those IDs,
-      // callable only by an admin.
+      // Placeholder for fetching emails securely later
       const tenantData: TenantDisplayData[] = profilesData?.map(p => ({
           ...p,
           email: `user_${p.id.substring(0, 5)}@example.com` // Placeholder email
       })) || [];
-
 
       setTenants(tenantData);
 
@@ -85,40 +89,92 @@ const TenantList: React.FC = () => {
     fetchTenants();
   }, []);
 
+  // --- Delete Logic ---
   const handleDeleteTenant = async (tenantId: string, tenantName: string | null) => {
-     if (!window.confirm(`Tem certeza que deseja excluir o inquilino ${tenantName || tenantId}? Esta ação é irreversível e excluirá o login e o perfil.`)) return;
-
-     setDeleteLoading(tenantId); // Set loading state for this specific user
+     if (!window.confirm(`Tem certeza que deseja excluir o inquilino ${tenantName || tenantId}? Esta ação é irreversível.`)) return;
+     setDeleteLoading(tenantId);
      setError(null);
-
+     setSuccess(null);
      try {
-        // IMPORTANT: Deleting a user requires admin privileges.
-        // This should ideally be done via an Edge Function using the Admin Client.
-        // Calling auth.admin.deleteUser directly from the client is insecure.
-        // We will create an Edge Function 'delete-user' for this.
-
-        // Placeholder for Edge Function call:
-         console.log(`Attempting to delete user via Edge Function: ${tenantId}`);
-         // const { error: functionError } = await supabase.functions.invoke('delete-user', {
-         //   body: { userId: tenantId },
-         // });
-         // if (functionError) throw functionError;
-
-         // TEMPORARY Placeholder Alert - Replace with Edge Function call
-         alert(`FUNCIONALIDADE DE EXCLUSÃO (VIA EDGE FUNCTION) AINDA NÃO IMPLEMENTADA PARA O USUÁRIO: ${tenantId}`);
-         // --- End of Placeholder ---
-
-
-        // If Edge Function call is successful:
-        // setTenants(prev => prev.filter(t => t.id !== tenantId)); // Remove from list optimistically
-        // console.log(`Tenant ${tenantId} deleted successfully.`);
-
+        console.log(`Invoking delete-user function for: ${tenantId}`);
+        const { error: functionError } = await supabase.functions.invoke('delete-user', {
+          body: JSON.stringify({ userId: tenantId }),
+          method: 'POST',
+        });
+        if (functionError) {
+           let message = functionError.message;
+           try {
+               const context = JSON.parse(functionError.context || '{}');
+               if (context.error) message = context.error;
+           } catch(e) { /* Ignore parsing error */ }
+           console.error('Error invoking delete-user function:', functionError);
+           throw new Error(`Erro ao excluir inquilino: ${message}`);
+        }
+        setTenants(prev => prev.filter(t => t.id !== tenantId));
+        setSuccess(`Inquilino ${tenantName || tenantId} excluído com sucesso.`);
+        console.log(`Tenant ${tenantId} deleted successfully.`);
      } catch (err: any) {
         console.error("Error deleting tenant:", err);
         setError(`Erro ao excluir inquilino: ${err.message}`);
      } finally {
-        setDeleteLoading(null); // Clear loading state
+        setDeleteLoading(null);
      }
+  };
+
+  // --- Password Reset Logic ---
+  const handleOpenResetDialog = (user: TargetUser) => {
+    setTargetUser(user);
+    setNewPassword(''); // Clear previous password attempt
+    setResetError(null); // Clear previous errors
+    setOpenResetDialog(true);
+  };
+
+  const handleCloseResetDialog = () => {
+    setOpenResetDialog(false);
+    setTargetUser(null); // Clear target user
+  };
+
+  const handlePasswordReset = async () => {
+    if (!targetUser || !newPassword) {
+        setResetError("Nova senha não pode estar vazia.");
+        return;
+    }
+     if (newPassword.length < 6) {
+         setResetError("Senha deve ter no mínimo 6 caracteres.");
+         return;
+     }
+
+    setResetLoading(targetUser.id);
+    setResetError(null);
+    setError(null); // Clear main error
+    setSuccess(null); // Clear main success
+
+    try {
+        console.log(`Invoking reset-tenant-password function for: ${targetUser.id}`);
+        const { error: functionError } = await supabase.functions.invoke('reset-tenant-password', {
+          body: JSON.stringify({ userId: targetUser.id, newPassword: newPassword }),
+          method: 'POST',
+        });
+
+        if (functionError) {
+           let message = functionError.message;
+           try {
+               const context = JSON.parse(functionError.context || '{}');
+               if (context.error) message = context.error;
+           } catch(e) { /* Ignore parsing error */ }
+           console.error('Error invoking reset-tenant-password function:', functionError);
+           throw new Error(message); // Throw specific error message
+        }
+
+        setSuccess(`Senha para ${targetUser.name || targetUser.id} redefinida com sucesso.`);
+        handleCloseResetDialog(); // Close dialog on success
+
+    } catch (err: any) {
+        console.error("Error resetting password:", err);
+        setResetError(`Erro ao redefinir senha: ${err.message}`); // Show error inside dialog
+    } finally {
+        setResetLoading(null);
+    }
   };
 
 
@@ -130,6 +186,8 @@ const TenantList: React.FC = () => {
     <Box sx={{ mt: 4 }}>
       <Typography variant="h6" gutterBottom>Inquilinos Cadastrados</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>} {/* Show general success */}
+
       {tenants.length === 0 && !loading && !error && (
         <Typography color="text.secondary">Nenhum inquilino cadastrado ainda.</Typography>
       )}
@@ -155,23 +213,30 @@ const TenantList: React.FC = () => {
                   <TableCell component="th" scope="row">
                     {tenant.full_name || '-'}
                   </TableCell>
-                  <TableCell>{tenant.email || '-'}</TableCell> {/* Display placeholder email for now */}
+                  <TableCell>{tenant.email || '-'}</TableCell>
                   <TableCell>{tenant.block_number || '-'}</TableCell>
                   <TableCell>{tenant.apartment_number || '-'}</TableCell>
                   <TableCell>{dayjs(tenant.created_at).format('DD/MM/YYYY HH:mm')}</TableCell>
                   <TableCell align="right">
-                    {/* <Tooltip title="Editar Inquilino (Não implementado)">
-                       <IconButton size="small" sx={{ mr: 1 }} disabled>
-                         <EditIcon fontSize="inherit" />
-                       </IconButton>
-                    </Tooltip> */}
+                    <Tooltip title="Redefinir Senha">
+                       <span>
+                         <IconButton
+                            size="small"
+                            sx={{ mr: 1 }}
+                            onClick={() => handleOpenResetDialog({ id: tenant.id, name: tenant.full_name })}
+                            disabled={resetLoading === tenant.id || deleteLoading === tenant.id}
+                         >
+                           {resetLoading === tenant.id ? <CircularProgress size={16} /> : <LockResetIcon fontSize="inherit" />}
+                         </IconButton>
+                       </span>
+                    </Tooltip>
                     <Tooltip title="Excluir Inquilino">
-                      <span> {/* Span needed for tooltip when button is disabled */}
+                      <span>
                         <IconButton
                             size="small"
                             color="error"
                             onClick={() => handleDeleteTenant(tenant.id, tenant.full_name)}
-                            disabled={deleteLoading === tenant.id} // Disable only the button being processed
+                            disabled={deleteLoading === tenant.id || resetLoading === tenant.id}
                         >
                           {deleteLoading === tenant.id ? <CircularProgress size={16} color="inherit"/> : <DeleteIcon fontSize="inherit" />}
                         </IconButton>
@@ -184,6 +249,40 @@ const TenantList: React.FC = () => {
           </Table>
         </TableContainer>
       )}
+
+      {/* Password Reset Dialog */}
+      <Dialog open={openResetDialog} onClose={handleCloseResetDialog}>
+        <DialogTitle>Redefinir Senha para {targetUser?.name || targetUser?.id}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Digite a nova senha para este inquilino. Eles precisarão usar esta nova senha para fazer login.
+          </DialogContentText>
+          {resetError && <Alert severity="error" sx={{ mb: 2 }}>{resetError}</Alert>}
+          <TextField
+            autoFocus
+            margin="dense"
+            id="newPassword"
+            label="Nova Senha"
+            type="password"
+            fullWidth
+            variant="standard"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            error={!!resetError} // Highlight field if there's a reset error
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseResetDialog} disabled={!!resetLoading}>Cancelar</Button>
+          <Button
+            onClick={handlePasswordReset}
+            disabled={!newPassword || newPassword.length < 6 || !!resetLoading}
+            variant="contained"
+          >
+            {resetLoading === targetUser?.id ? <CircularProgress size={20} color="inherit"/> : "Redefinir Senha"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 };
