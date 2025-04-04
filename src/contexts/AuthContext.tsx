@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true); // Start as true
 
   useEffect(() => {
-    let profileFetchAttempted = false; // Flag to prevent race conditions
+    // let profileFetchAttempted = false; // Removed unused variable
 
     // 1. Set up auth state change listener FIRST
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (!currentUser) {
           setProfile(null);
           setLoading(false);
-          profileFetchAttempted = false; // Reset flag
+          // profileFetchAttempted = false; // Removed unused variable assignment
         }
         // Profile fetching will be handled by the user state change below
         // We only set loading to false here if the user is null (logged out)
