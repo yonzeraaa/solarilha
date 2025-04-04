@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
-// import { useAuth } from '../../contexts/AuthContext'; // No longer needed for creating reservations
+// import { useAuth } from '../../contexts/AuthContext'; // No longer needed
 import {
   Box,
   Typography,
@@ -11,7 +11,8 @@ import {
   ListItemText,
   IconButton,
   Paper,
-  Divider // Added for visual separation
+  Divider,
+  Tooltip // Added back Tooltip
 } from '@mui/material';
 // Removed Date Picker imports
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -22,21 +23,21 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Define interface for reservation data (including user info)
+// Interface for reservation data (including user info)
 interface ReservationWithUser {
   id: number;
   reservation_date: string; // Comes as string from Supabase
   user_id: string;
-  profiles: { // Should be an object for one-to-one relation
+  profiles: { // Supabase might return array even for FK relation, handle as array
     full_name: string | null;
     block_number: string | null;
-  } | null; // Profile might be null if user deleted or FK constraint allows null?
+    apartment_number?: string | null;
+  }[] | null; // Expect array or null
 }
 
 const RESOURCE_NAME = 'barbecue_area';
 
 const ReserveBBQ: React.FC = () => {
-  // const { user } = useAuth(); // Not needed for creating
   // Removed selectedDate state
   const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
   // Removed reservedDates state
@@ -50,26 +51,23 @@ const ReserveBBQ: React.FC = () => {
     setFetchLoading(true);
     setError(null);
     try {
-      // Fetch reservations - Temporarily remove profile join to isolate 400 error
-      console.log("Fetching reservations without profile join...");
+      // Fetch reservations and join with profiles table to get user name/block/apt
+      console.log("Fetching reservations with profile join..."); // Add log
       const { data, error: fetchError } = await supabase
         .from('reservations')
         .select(`
           id,
           reservation_date,
-          user_id
-        `) // Select only base reservation fields
+          user_id,
+          profiles ( full_name, block_number, apartment_number )
+        `) // Re-added profile join including apartment_number
         .eq('resource_name', RESOURCE_NAME)
         .order('reservation_date', { ascending: true });
 
       if (fetchError) throw fetchError;
 
-      // We need to adjust the state type or mapping if we remove profiles temporarily
-      // For now, let's just log the raw data
-      console.log("Raw reservation data:", data);
-      // setReservations(data || []); // Cannot set directly without profiles
-      // Clear reservations for now to avoid type errors in rendering
-      setReservations([]);
+      console.log("Fetched reservation data:", data); // Log fetched data
+      setReservations(data || []); // Set state with joined data
 
     } catch (err: any) {
       console.error("Error fetching reservations:", err);
@@ -85,9 +83,6 @@ const ReserveBBQ: React.FC = () => {
     fetchReservations();
   }, []);
 
-  // Removed handleDateChange
-  // Removed handleReserve
-
    // Handle deleting a reservation
    const handleDelete = async (reservationId: number) => {
      if (!window.confirm("Tem certeza que deseja cancelar esta reserva?")) return;
@@ -97,6 +92,7 @@ const ReserveBBQ: React.FC = () => {
      setSuccess(null);
 
      try {
+       // Admin delete policy allows deleting any reservation
        const { error: deleteError } = await supabase
          .from('reservations')
          .delete()
@@ -115,10 +111,9 @@ const ReserveBBQ: React.FC = () => {
      }
    };
 
-  // Removed renderDay function
-
   return (
     <Box>
+      {/* Title updated in Step 2 */}
       <Typography variant="h5" gutterBottom>Consultar Reservas da Churrasqueira</Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -126,7 +121,7 @@ const ReserveBBQ: React.FC = () => {
 
       <Paper sx={{ p: { xs: 1, sm: 2 } }}>
         {/* List of Reservations */}
-        <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}> {/* Limit height and make scrollable */}
+        <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
            {fetchLoading ? (
              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress /></Box>
            ) : reservations.length === 0 ? (
@@ -137,18 +132,21 @@ const ReserveBBQ: React.FC = () => {
                  <React.Fragment key={res.id}>
                    <ListItem
                      secondaryAction={
-                       <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(res.id)} disabled={loading}>
-                         <DeleteIcon fontSize="small" />
-                       </IconButton>
+                       <Tooltip title="Cancelar Reserva">
+                         {/* IconButton is the single direct child */}
+                         <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(res.id)} disabled={loading}>
+                           <DeleteIcon fontSize="small" />
+                         </IconButton>
+                       </Tooltip>
                      }
                    >
                      <ListItemText
                        primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')}`}
-                       // Secondary info removed as profile data is not fetched currently
-                       // secondary={`Reservado por: ${res.profiles?.full_name || 'Usuário Desconhecido'} (${res.profiles?.block_number || 'Bloco?'})`}
+                       // Display fetched user info
+                       secondary={`Reservado por: ${res.profiles?.[0]?.full_name || 'Usuário Desconhecido'} (${res.profiles?.[0]?.block_number || '?'}/${res.profiles?.[0]?.apartment_number || '?'})`}
                      />
                    </ListItem>
-                   {index < reservations.length - 1 && <Divider component="li" />} {/* Add divider between items */}
+                   {index < reservations.length - 1 && <Divider component="li" />}
                  </React.Fragment>
                ))}
              </List>

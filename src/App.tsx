@@ -41,7 +41,7 @@ function RootRedirect() {
     return <Navigate to="/admin" replace />; // Redirect to the base admin path
   } else if (profile?.role === 'tenant') {
     console.log('RootRedirect: Tenant role found, redirecting to /tenant/dashboard');
-    return <Navigate to="/tenant/dashboard" replace />;
+    return <Navigate to="/tenant/bills" replace />; // Redirect directly to default tenant view
   } else {
     // Logged in but role unknown or not set? Fallback to login for safety.
     console.warn('RootRedirect: Role unknown or missing, redirecting to /login. Profile:', profile);

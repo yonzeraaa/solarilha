@@ -38,7 +38,7 @@ const AdminDashboard: React.FC = () => {
   const menuItems = [
     { text: 'Gerenciar Inquilinos', icon: <PeopleAltIcon />, path: '/admin/tenants' }, // Example path
     { text: 'Enviar Boletos', icon: <ReceiptLongIcon />, path: '/admin/bills' }, // Example path
-    { text: 'Reservar Churrasqueira', icon: <OutdoorGrillIcon />, path: '/admin/bbq' }, // Example path
+    { text: 'Consultar Reservas Churrasqueira', icon: <OutdoorGrillIcon />, path: '/admin/bbq' }, // Renamed
   ];
 
   return (
