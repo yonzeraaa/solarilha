@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import GlobalStyles from '@mui/material/GlobalStyles'; // Import GlobalStyles
 import theme from './styles/theme'; // Import the custom theme
+import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
 import App from './App.tsx';
 
 createRoot(document.getElementById('root')!).render(
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')!).render(
           },
         }}
       />
-      <App />
+      <AuthProvider> {/* Wrap App with AuthProvider */}
+        <App />
+      </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
 )

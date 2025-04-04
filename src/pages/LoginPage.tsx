@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
+import { Navigate, useLocation } from 'react-router-dom'; // Added Navigate, useLocation
 import {
   Container,
   Box,
@@ -11,18 +12,33 @@ import {
   Paper,
   Avatar,
   CssBaseline,
-  CircularProgress, // Added for loading indicator
-  Alert // Added for error messages
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
-import { supabase } from '../services/supabaseClient'; // Import Supabase client
+import { supabase } from '../services/supabaseClient';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false); // Note: Supabase handles sessions, 'rememberMe' might need custom logic if required beyond session persistence
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { user, loading: authLoading } = useAuth(); // Get user and auth loading state
+  const location = useLocation();
+
+  // Redirect away from login page if already authenticated and not loading
+  useEffect(() => {
+    if (!authLoading && user) {
+      // Intended destination might be in location state if redirected here
+      const from = location.state?.from?.pathname || "/";
+      console.log(`LoginPage: User already authenticated, redirecting to ${from}`);
+      // Use Navigate component logic or navigate function if preferred
+    }
+  }, [user, authLoading, location]);
+
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -36,7 +52,6 @@ const LoginPage: React.FC = () => {
       });
 
       if (signInError) {
-        // Provide more specific error messages if possible
         if (signInError.message.includes("Invalid login credentials")) {
           setError("Email ou senha inválidos.");
         } else {
@@ -44,23 +59,32 @@ const LoginPage: React.FC = () => {
         }
         console.error('Supabase sign-in error:', signInError);
         setLoading(false);
-        return; // Stop execution if there's an error
+        return;
       }
 
-      // Handle successful login
       console.log('Login successful!', data);
-      // TODO: Redirect user based on role (Admin/Tenant) after fetching profile or session data
-      alert('Login bem-sucedido! (Redirecionamento ainda não implementado)');
-      // Example: navigate('/dashboard'); // Requires react-router-dom's useNavigate hook
+      // Successful login! The AuthContext state will update,
+      // and the routing logic in App.tsx (RootRedirect) will handle redirection.
+      // No explicit navigation needed here anymore.
 
     } catch (catchError: any) {
       console.error('Unexpected error during login:', catchError);
       setError(`Ocorreu um erro inesperado: ${catchError.message || 'Erro desconhecido'}`);
     } finally {
-      setLoading(false); // Ensure loading is turned off
+      setLoading(false);
     }
   };
 
+  // --- Redirect Logic ---
+  // If auth is not loading and user exists, redirect away from login page
+  if (!authLoading && user) {
+    const from = location.state?.from?.pathname || "/"; // Redirect to intended destination or root
+    return <Navigate to={from} replace />;
+  }
+  // --- End Redirect Logic ---
+
+
+  // Render login form only if not authenticated or still loading auth state
   return (
     <Container component="main" maxWidth="sm" sx={{ display: 'flex', alignItems: 'center', minHeight: '100vh' }}>
       <CssBaseline />
@@ -73,16 +97,16 @@ const LoginPage: React.FC = () => {
           alignItems: 'center',
           width: '100%',
           borderRadius: 3,
+          backgroundColor: 'rgba(66, 66, 66, 0.9)', // Dark Gray with 90% opacity
         }}
       >
         <Avatar sx={{ m: 1, width: 56, height: 56 }}>
-          <LockPersonOutlinedIcon fontSize="large" />
+          <LockPersonOutlinedIcon fontSize="large" sx={{ color: 'background.paper' }} />
         </Avatar>
         <Typography component="h1" variant="h5" sx={{ mb: 4, color: 'text.primary' }}>
           Acessar Plataforma
         </Typography>
 
-        {/* Display Error Alert */}
         {error && (
           <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
             {error}
@@ -101,7 +125,7 @@ const LoginPage: React.FC = () => {
             autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={loading} // Disable input while loading
+            disabled={loading}
             InputLabelProps={{ sx: { color: 'text.secondary' } }}
             InputProps={{ sx: { color: 'text.primary' } }}
           />
@@ -116,7 +140,7 @@ const LoginPage: React.FC = () => {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={loading} // Disable input while loading
+            disabled={loading}
             sx={{ mb: 1 }}
             InputLabelProps={{ sx: { color: 'text.secondary' } }}
             InputProps={{ sx: { color: 'text.primary' } }}
@@ -129,13 +153,13 @@ const LoginPage: React.FC = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   size="small"
-                  disabled={loading} // Disable checkbox while loading
+                  disabled={loading}
                 />
               }
               label={<Typography variant="body2" sx={{ color: 'text.secondary' }}>Lembrar Acesso</Typography>}
               sx={{ mr: 'auto' }}
             />
-            <Link href="#" variant="body2" sx={{ opacity: loading ? 0.5 : 1 }}> {/* Dim link when loading */}
+            <Link href="#" variant="body2" sx={{ opacity: loading ? 0.5 : 1 }}>
               Esqueceu a senha?
             </Link>
           </Box>
@@ -146,7 +170,7 @@ const LoginPage: React.FC = () => {
                fullWidth
                variant="contained"
                color="primary"
-               disabled={loading} // Disable button while loading
+               disabled={loading}
                sx={{ py: 1.5 }}
              >
                {loading ? 'Entrando...' : 'Entrar'}
@@ -155,7 +179,7 @@ const LoginPage: React.FC = () => {
                <CircularProgress
                  size={24}
                  sx={{
-                   color: 'primary.contrastText', // Match button text color
+                   color: 'primary.contrastText',
                    position: 'absolute',
                    top: '50%',
                    left: '50%',
