@@ -1,6 +1,7 @@
 import React from 'react';
-import { Typography, Box, Paper } from '@mui/material';
-import UploadBillForm from './UploadBillForm'; // Import the form
+import { Typography, Box, Paper, Divider } from '@mui/material'; // Added Divider
+import UploadBillForm from './UploadBillForm';
+import BillList from './BillList'; // Import the list component
 
 const UploadBills: React.FC = () => {
   return (
@@ -11,15 +12,12 @@ const UploadBills: React.FC = () => {
         <UploadBillForm />
       </Paper>
 
-      {/* TODO: Add section to list previously uploaded bills */}
-      <Paper sx={{ p: 3 }}>
-         <Typography variant="h6" gutterBottom>Boletos Enviados</Typography>
-         <Typography variant="body2" color="text.secondary">
-           (A lista de boletos enviados será implementada aqui.)
-         </Typography>
-         {/* Placeholder for a table/list */}
-       </Paper>
+      <Divider sx={{ my: 4 }} /> {/* Add a visual separator */}
 
+      {/* Bill List Section */}
+      {/* Paper styling is handled within BillList now */}
+      <BillList />
+      {/* Removed redundant Paper wrapper and placeholder text */}
     </Box>
   );
 };
