@@ -7,7 +7,9 @@ interface UserProfile {
   id: string;
   role: 'admin' | 'tenant';
   full_name?: string;
-  block_number?: string;
+  block_number?: string; // Already exists
+  apartment_number?: string; // Add apartment number
+  // block_number?: string; // Removed duplicate
   // Add other profile fields as needed
 }
 
@@ -97,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const { data, error, status } = await supabase
             .from('profiles')
-            .select(`id, role, full_name, block_number`)
+            .select(`id, role, full_name, block_number, apartment_number`) // Add apartment_number
             .eq('id', user.id)
             .single();
 
