@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
-// import { useAuth } from '../../contexts/AuthContext'; // No longer needed
 import {
   Box,
   Typography,
@@ -12,9 +11,8 @@ import {
   IconButton,
   Paper,
   Divider,
-  Tooltip // Added back Tooltip
+  Tooltip
 } from '@mui/material';
-// Removed Date Picker imports
 import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -23,54 +21,47 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Interface for reservation data (including user info)
-interface ReservationWithUser {
+// Interface matching the structure returned by the RPC function
+interface ReservationWithDetails {
   id: number;
-  reservation_date: string; // Comes as string from Supabase
+  reservation_date: string;
   user_id: string;
-  profiles: { // Supabase might return array even for FK relation, handle as array
-    full_name: string | null;
-    block_number: string | null;
-    apartment_number?: string | null;
-  }[] | null; // Expect array or null
+  full_name: string | null;
+  block_number: string | null;
+  apartment_number: string | null;
 }
 
-const RESOURCE_NAME = 'barbecue_area';
+// No longer needed as RPC returns combined data
+// interface ReservationWithUser { ... }
+
+const RESOURCE_NAME = 'barbecue_area'; // Still needed for delete logic if kept
 
 const ReserveBBQ: React.FC = () => {
-  // Removed selectedDate state
-  const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
-  // Removed reservedDates state
-  const [loading, setLoading] = useState(false); // Used for delete operation
+  const [reservations, setReservations] = useState<ReservationWithDetails[]>([]); // Use new interface
+  const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Function to fetch reservations including user profile info
+  // Function to fetch reservations using the RPC function
   const fetchReservations = async () => {
     setFetchLoading(true);
     setError(null);
     try {
-      // Fetch reservations and join with profiles table to get user name/block/apt
-      console.log("Fetching reservations with profile join..."); // Add log
-      const { data, error: fetchError } = await supabase
-        .from('reservations')
-        .select(`
-          id,
-          reservation_date,
-          user_id,
-          profiles ( full_name, block_number, apartment_number )
-        `) // Re-added profile join including apartment_number
-        .eq('resource_name', RESOURCE_NAME)
-        .order('reservation_date', { ascending: true });
+      console.log("Calling RPC function get_bbq_reservations_with_details...");
+      // Call the SQL function directly
+      const { data, error: rpcError } = await supabase.rpc(
+        'get_bbq_reservations_with_details'
+        // Pass arguments here if the function required them, e.g., { arg_name: value }
+      );
 
-      if (fetchError) throw fetchError;
+      if (rpcError) throw rpcError;
 
-      console.log("Fetched reservation data:", data); // Log fetched data
-      setReservations(data || []); // Set state with joined data
+      console.log("Fetched reservation data via RPC:", data);
+      setReservations(data || []); // Set state with data returned from function
 
     } catch (err: any) {
-      console.error("Error fetching reservations:", err);
+      console.error("Error fetching reservations via RPC:", err);
       setError(`Erro ao carregar reservas: ${err.message}`);
       setReservations([]);
     } finally {
@@ -83,16 +74,13 @@ const ReserveBBQ: React.FC = () => {
     fetchReservations();
   }, []);
 
-   // Handle deleting a reservation
+   // Handle deleting a reservation (still uses direct table access, which is fine for admins)
    const handleDelete = async (reservationId: number) => {
      if (!window.confirm("Tem certeza que deseja cancelar esta reserva?")) return;
-
      setLoading(true);
      setError(null);
      setSuccess(null);
-
      try {
-       // Admin delete policy allows deleting any reservation
        const { error: deleteError } = await supabase
          .from('reservations')
          .delete()
@@ -113,14 +101,12 @@ const ReserveBBQ: React.FC = () => {
 
   return (
     <Box>
-      {/* Title updated in Step 2 */}
       <Typography variant="h5" gutterBottom>Consultar Reservas da Churrasqueira</Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
       <Paper sx={{ p: { xs: 1, sm: 2 } }}>
-        {/* List of Reservations */}
         <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
            {fetchLoading ? (
              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress /></Box>
@@ -133,7 +119,6 @@ const ReserveBBQ: React.FC = () => {
                    <ListItem
                      secondaryAction={
                        <Tooltip title="Cancelar Reserva">
-                         {/* IconButton is the single direct child */}
                          <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(res.id)} disabled={loading}>
                            <DeleteIcon fontSize="small" />
                          </IconButton>
@@ -142,8 +127,8 @@ const ReserveBBQ: React.FC = () => {
                    >
                      <ListItemText
                        primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')}`}
-                       // Display fetched user info
-                       secondary={`Reservado por: ${res.profiles?.[0]?.full_name || 'Usuário Desconhecido'} (${res.profiles?.[0]?.block_number || '?'}/${res.profiles?.[0]?.apartment_number || '?'})`}
+                       // Display data directly from the RPC result object
+                       secondary={`Reservado por: ${res.full_name || 'Usuário Desconhecido'} (${res.block_number || '?'}/${res.apartment_number || '?'})`}
                      />
                    </ListItem>
                    {index < reservations.length - 1 && <Divider component="li" />}
