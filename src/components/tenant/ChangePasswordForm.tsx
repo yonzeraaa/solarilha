@@ -1,63 +1,65 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSnackbar } from 'notistack'; // Import useSnackbar
 import {
   Box,
   TextField,
   Button,
   Typography,
   CircularProgress,
-  Alert,
-  Paper
+  // Alert, // No longer needed for general feedback
+  Paper,
+  Alert // Keep Alert for mismatch helper text if desired, or remove if helperText is enough
 } from '@mui/material';
 
-const SUCCESS_MESSAGE_KEY = 'changePasswordSuccess'; // Key for sessionStorage
+// const SUCCESS_MESSAGE_KEY = 'changePasswordSuccess'; // No longer needed
 
 const ChangePasswordForm: React.FC = () => {
   const { user } = useAuth();
+  const { enqueueSnackbar } = useSnackbar(); // Get snackbar function
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Read initial success message from sessionStorage
-  const [success, setSuccess] = useState<string | null>(() => {
-      const msg = sessionStorage.getItem(SUCCESS_MESSAGE_KEY);
-      sessionStorage.removeItem(SUCCESS_MESSAGE_KEY); // Clear after reading
-      return msg;
-  });
+  const [error, setError] = useState<string | null>(null); // Keep error for field highlighting/helper text
+  // Removed success state
 
-  // Clear success message if user starts typing again
+  // Clear error when user types
   useEffect(() => {
-      if (success && (newPassword || confirmPassword)) {
-          setSuccess(null);
+      if (error && (newPassword || confirmPassword)) {
+          setError(null);
       }
-  }, [newPassword, confirmPassword, success]);
+  }, [newPassword, confirmPassword, error]);
 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    // setSuccess(null); // Don't clear success here anymore
+    // setSuccess(null); // Removed
 
+    // Basic Validation
     if (!newPassword || !confirmPassword) {
-      setError("Ambos os campos de senha são obrigatórios.");
+      // Use snackbar for general required field error
+      enqueueSnackbar("Ambos os campos de senha são obrigatórios.", { variant: 'warning'});
       return;
     }
     if (newPassword.length < 6) {
-      setError("Nova senha deve ter no mínimo 6 caracteres.");
+      setError("Nova senha deve ter no mínimo 6 caracteres."); // Keep local error for helper text
+      enqueueSnackbar("Nova senha deve ter no mínimo 6 caracteres.", { variant: 'warning'});
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("As senhas não coincidem.");
+      setError("As senhas não coincidem."); // Keep local error for helper text/highlighting
+      enqueueSnackbar("As senhas não coincidem.", { variant: 'warning'});
       return;
     }
     if (!user) {
-        setError("Usuário não autenticado. Faça login novamente.");
+        // This case should ideally not happen due to ProtectedRoute
+        enqueueSnackbar("Usuário não autenticado. Faça login novamente.", { variant: 'error'});
         return;
     }
 
     setLoading(true);
-    // setSuccess(null); // Explicit clear removed earlier
 
     try {
       const { error: updateError } = await supabase.auth.updateUser({
@@ -68,31 +70,19 @@ const ChangePasswordForm: React.FC = () => {
         throw updateError;
       }
 
-      // Store success message in sessionStorage BEFORE clearing fields
-      sessionStorage.setItem(SUCCESS_MESSAGE_KEY, "Senha alterada com sucesso!");
-      console.log("Success message stored in sessionStorage.");
-
-      // Clear fields (re-enabled)
+      // Use snackbar for success
+      enqueueSnackbar("Senha alterada com sucesso!", { variant: 'success' });
       setNewPassword('');
       setConfirmPassword('');
-      // Note: setSuccess state won't be set here directly,
-      // it will be picked up from sessionStorage on the next render cycle
 
     } catch (err: any) {
       console.error("Error updating password:", err);
-      setError(`Erro ao alterar senha: ${err.message}`);
-      sessionStorage.removeItem(SUCCESS_MESSAGE_KEY); // Clear success message on error
+      // Use snackbar for API errors
+      enqueueSnackbar(`Erro ao alterar senha: ${err.message}`, { variant: 'error' });
     } finally {
       setLoading(false);
-      // Force a re-render IF NEEDED to pick up sessionStorage, though auth change might do it
-      // This is usually not necessary as the auth state change triggers re-render
-      // window.location.reload(); // Avoid this if possible
     }
   };
-
-  // Determine message and color for feedback text
-  const feedbackMessage = error || success; // Success now comes from state initialized by sessionStorage
-  const feedbackColor = error ? 'error.main' : success ? 'success.main' : 'text.secondary';
 
   return (
     <Paper sx={{ p: 3, maxWidth: '600px', mx: 'auto' }}>
@@ -101,18 +91,9 @@ const ChangePasswordForm: React.FC = () => {
             Alterar Minha Senha
           </Typography>
 
-          {/* Feedback Text Area Below Button */}
-           <Box sx={{ minHeight: '40px', mb: 2 }}> {/* Keep mb here for spacing below alerts */}
-             {feedbackMessage && !error && ( // Show success message using Alert for consistency
-                <Alert severity="success">{feedbackMessage}</Alert>
-             )}
-              {error && ( // Show error message using Alert
-                <Alert severity="error">{error}</Alert>
-             )}
-           </Box> {/* End of New Password Box */}
+          {/* Removed Alert feedback area */}
 
-
-          <Box sx={{ mb: 2 }}> {/* Add margin below New Password */}
+          <Box sx={{ mb: 2 }}>
             <TextField
               required
               fullWidth
@@ -123,9 +104,11 @@ const ChangePasswordForm: React.FC = () => {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               disabled={loading}
+              error={!!error && error.includes("mínimo 6 caracteres")} // Highlight on length error
+              helperText={error && error.includes("mínimo 6 caracteres") ? error : ""} // Show length error as helper
             />
-          </Box> {/* End of Confirm Password Box */}
-          <Box sx={{ mb: 2 }}> {/* Add margin below Confirm Password */}
+          </Box>
+          <Box sx={{ mb: 2 }}>
             <TextField
               required
               fullWidth
@@ -136,8 +119,8 @@ const ChangePasswordForm: React.FC = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={loading}
-              error={!!error && error.includes("não coincidem")}
-              helperText={error && error.includes("não coincidem") ? error : ""}
+              error={!!error && error.includes("não coincidem")} // Highlight on mismatch error
+              helperText={error && error.includes("não coincidem") ? error : ""} // Show mismatch error as helper
             />
           </Box>
 
@@ -152,24 +135,8 @@ const ChangePasswordForm: React.FC = () => {
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Alterar Senha'}
             </Button>
-            {loading && (
-              <CircularProgress
-                size={24}
-                sx={{
-                  color: 'primary.contrastText',
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  marginTop: '-12px',
-                  marginLeft: '-12px',
-                }}
-              />
-            )}
+            {loading && ( <CircularProgress size={24} sx={{ color: 'primary.contrastText', position: 'absolute', top: '50%', left: '50%', marginTop: '-12px', marginLeft: '-12px', }} /> )}
           </Box>
-
-           {/* Feedback Text Area Removed - Using Alerts above */}
-           {/* <Box sx={{ mt: 2, minHeight: '24px' }}> ... </Box> */}
-
         </Box>
     </Paper>
   );

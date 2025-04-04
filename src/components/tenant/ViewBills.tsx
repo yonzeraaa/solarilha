@@ -13,12 +13,13 @@ import {
   ListItemIcon,
   IconButton,
   Tooltip,
-  Paper,
-  InfoIcon, // Use Filled version
+  Paper, // Add missing comma
+  // InfoIcon // Removed incorrect import
   Skeleton // Import Skeleton
 } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DownloadIcon from '@mui/icons-material/Download';
+import InfoIcon from '@mui/icons-material/Info'; // Correct import
 
 // Interface remains the same...
 interface Bill {
