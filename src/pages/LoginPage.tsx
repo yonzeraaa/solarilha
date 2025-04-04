@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
 
     } catch (catchError: any) {
       console.error('Unexpected error during login:', catchError);
-      setError(`Ocorreu um erro inesperado: ${catchError.message || 'Erro desconhecido'}`);
+      setError(`Ocorreu um erro inesperado: ${catchError.message || 'Detalhes indisponíveis'}`);
     } finally {
       setLoading(false);
     }

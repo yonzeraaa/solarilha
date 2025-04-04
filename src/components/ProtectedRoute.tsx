@@ -28,7 +28,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
 
   // If logged in but role doesn't match allowed roles, redirect to login (or an unauthorized page)
   if (!profile || !allowedRoles.includes(profile.role)) {
-    console.warn(`Unauthorized access attempt to ${location.pathname} by user with role: ${profile?.role}`);
+    console.warn(`Tentativa de acesso não autorizado a ${location.pathname} pelo usuário com função: ${profile?.role}`);
     // Redirecting to login might be confusing if already logged in.
     // Consider an Unauthorized page or redirecting based on role later.
     // For now, redirecting to login clears the state.

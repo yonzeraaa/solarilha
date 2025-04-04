@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true); // Ensure loading is true during init
       const { data: { session: initialSession }, error } = await supabase.auth.getSession();
       if (error) {
-        console.error("Error getting initial session:", error);
+        console.error("Erro ao obter sessão inicial:", error);
         setLoading(false); // Stop loading on error
         return;
       }
@@ -106,17 +106,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (!isMounted) return; // Don't update state if component unmounted
 
           if (error && status !== 406) {
-            console.error('Error fetching profile:', error);
+            console.error('Erro ao buscar perfil:', error);
             setProfile(null);
           } else if (data) {
             console.log('Profile fetched successfully:', data);
             setProfile(data as UserProfile);
           } else {
-            console.warn(`No profile found for user ID: ${user.id}.`);
+            console.warn(`Nenhum perfil encontrado para o usuário ID: ${user.id}.`);
             setProfile(null);
           }
         } catch (e) {
-          console.error('Unexpected error fetching profile:', e);
+          console.error('Erro inesperado ao buscar perfil:', e);
           if (isMounted) setProfile(null);
         } finally {
           // IMPORTANT: Set loading to false only after fetch attempt completes
@@ -143,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true); // Optionally set loading during sign out
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error("Error signing out:", error);
+      console.error("Erro ao sair:", error);
       setLoading(false); // Stop loading on error
     }
     // State updates (session, user, profile to null, loading to false) handled by listener
