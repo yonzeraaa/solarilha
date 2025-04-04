@@ -2,7 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import TenantDashboard from './pages/TenantDashboard';
-import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
+import ProtectedRoute from './components/ProtectedRoute';
+import ManageTenants from './components/admin/ManageTenants'; // Import admin components
+import UploadBills from './components/admin/UploadBills';
+import ReserveBBQ from './components/admin/ReserveBBQ';
 import { useAuth } from './contexts/AuthContext'; // Import useAuth to check status
 import { Box, CircularProgress } from '@mui/material'; // For initial loading state
 
@@ -11,15 +14,16 @@ function RootRedirect() {
   const { user, profile, loading } = useAuth();
   console.log('RootRedirect Check:', { loading, user: !!user, profile }); // Add logging
 
+  // AuthContext now handles loading state accurately for both auth and profile fetch
   if (loading) {
-    console.log('RootRedirect: Auth loading...');
-    // Show loading indicator while determining auth state/role
+    console.log(`RootRedirect: Waiting... AuthLoading: ${loading}`);
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <CircularProgress />
       </Box>
     );
   }
+  // If loading is false, proceed with redirection logic
 
   if (!user) {
     console.log('RootRedirect: No user, redirecting to /login');
@@ -32,7 +36,7 @@ function RootRedirect() {
   console.log('RootRedirect: User exists, checking profile role:', profile?.role);
   if (profile?.role === 'admin') {
     console.log('RootRedirect: Admin role found, redirecting to /admin/dashboard');
-    return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/admin" replace />; // Redirect to the base admin path
   } else if (profile?.role === 'tenant') {
     console.log('RootRedirect: Tenant role found, redirecting to /tenant/dashboard');
     return <Navigate to="/tenant/dashboard" replace />;
@@ -52,13 +56,22 @@ function App() {
 
         {/* Protected Admin Route */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-          {/* Routes nested under ProtectedRoute will only render if authorized */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          {/* Add other admin-only routes here */}
-        </Route>
+          {/* Wrap admin routes within the AdminDashboard layout component */}
+          <Route path="/admin" element={<AdminDashboard />}>
+            {/* Index route for the dashboard itself (optional content) */}
+            {/* <Route index element={<AdminOverview />} /> */}
+            <Route path="tenants" element={<ManageTenants />} />
+            <Route path="bills" element={<UploadBills />} />
+            <Route path="bbq" element={<ReserveBBQ />} />
+            {/* Redirect base /admin/dashboard to a default section, e.g., tenants */}
+            <Route index element={<Navigate to="tenants" replace />} />
+            {/* Add other admin-only routes here, nested under /admin */}
+        </Route> {/* Closes the /admin AdminDashboard layout route */}
+       </Route> {/* Closes the ProtectedRoute for admin */}
 
         {/* Protected Tenant Route */}
         <Route element={<ProtectedRoute allowedRoles={['tenant']} />}>
+          {/* TODO: Add nested routes for Tenant Dashboard similarly */}
           <Route path="/tenant/dashboard" element={<TenantDashboard />} />
           {/* Add other tenant-only routes here */}
         </Route>

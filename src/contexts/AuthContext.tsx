@@ -16,7 +16,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: UserProfile | null;
-  loading: boolean; // Indicates if auth state is being determined initially
+  loading: boolean; // Now accurately reflects initial auth AND profile loading
   signOut: () => Promise<void>;
 }
 
@@ -32,79 +32,119 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true); // Start as true until initial check is done
+  const [loading, setLoading] = useState(true); // Start as true
 
   useEffect(() => {
-    // 1. Get initial session state
-    const getInitialSession = async () => {
-      const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error getting initial session:", error);
-      }
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      setLoading(false); // Initial check complete
-    };
+    let profileFetchAttempted = false; // Flag to prevent race conditions
 
-    getInitialSession();
-
-    // 2. Set up auth state change listener
+    // 1. Set up auth state change listener FIRST
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
         console.log('Auth state changed:', _event, newSession);
+        const currentUser = newSession?.user ?? null;
         setSession(newSession);
-        setUser(newSession?.user ?? null);
-        // No need to set loading here, it's for the initial load
+        setUser(currentUser);
+
+        // If user logs out, clear profile and stop loading
+        if (!currentUser) {
+          setProfile(null);
+          setLoading(false);
+          profileFetchAttempted = false; // Reset flag
+        }
+        // Profile fetching will be handled by the user state change below
+        // We only set loading to false here if the user is null (logged out)
       }
     );
+
+    // 2. Get initial session state and trigger initial load/profile fetch
+    const initializeAuth = async () => {
+      setLoading(true); // Ensure loading is true during init
+      const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error getting initial session:", error);
+        setLoading(false); // Stop loading on error
+        return;
+      }
+
+      const initialUser = initialSession?.user ?? null;
+      setSession(initialSession);
+      setUser(initialUser);
+
+      // If there's no initial user, we are done loading
+      if (!initialUser) {
+        setLoading(false);
+      }
+      // If there IS an initial user, the useEffect below listening to 'user' will handle profile fetch and set loading to false eventually
+    };
+
+    initializeAuth();
 
     // Cleanup listener on component unmount
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Run only once on mount
 
   // 3. Fetch user profile when user object changes (and exists)
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (user) {
+    // Only fetch if we have a user
+    if (user) {
+      setLoading(true); // Set loading true when starting profile fetch
+      let isMounted = true; // Prevent state update on unmounted component
+
+      const fetchProfile = async () => {
+        console.log(`Fetching profile for user: ${user.id}`);
         try {
-          // Fetch profile based on user ID
           const { data, error, status } = await supabase
             .from('profiles')
-            .select(`id, role, full_name, block_number`) // Select desired fields
+            .select(`id, role, full_name, block_number`)
             .eq('id', user.id)
-            .single(); // Expect only one profile per user
+            .single();
 
-          if (error && status !== 406) { // 406 means no rows found, which is okay initially
+          if (!isMounted) return; // Don't update state if component unmounted
+
+          if (error && status !== 406) {
             console.error('Error fetching profile:', error);
-            setProfile(null); // Reset profile on error
+            setProfile(null);
           } else if (data) {
+            console.log('Profile fetched successfully:', data);
             setProfile(data as UserProfile);
           } else {
-             setProfile(null); // No profile found
-             console.warn(`No profile found for user ID: ${user.id}. This might be expected if profile creation is pending.`);
+            console.warn(`No profile found for user ID: ${user.id}.`);
+            setProfile(null);
           }
         } catch (e) {
           console.error('Unexpected error fetching profile:', e);
-          setProfile(null);
+          if (isMounted) setProfile(null);
+        } finally {
+          // IMPORTANT: Set loading to false only after fetch attempt completes
+          if (isMounted) setLoading(false);
         }
-      } else {
-        // Clear profile if user logs out
-        setProfile(null);
-      }
-    };
+      };
 
-    fetchProfile();
-  }, [user]); // Re-run this effect when the user object changes
+      fetchProfile();
+
+      // Cleanup function to set isMounted to false
+      return () => {
+        isMounted = false;
+      };
+
+    } else {
+      // No user, ensure profile is null and loading is false (handled by listener/init)
+      setProfile(null);
+      // setLoading(false); // Should be handled by listener/init when user becomes null
+    }
+  }, [user]); // Re-run this effect ONLY when the user object itself changes
 
   // Sign out function
   const signOut = async () => {
+    setLoading(true); // Optionally set loading during sign out
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error signing out:", error);
+      setLoading(false); // Stop loading on error
     }
-    // State updates (session, user, profile) will be handled by the onAuthStateChange listener
+    // State updates (session, user, profile to null, loading to false) handled by listener
   };
 
   // Value provided to consuming components
@@ -116,6 +156,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
   };
 
+  // Render children only when initial loading is potentially complete
+  // or let RootRedirect handle the loading state display
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
