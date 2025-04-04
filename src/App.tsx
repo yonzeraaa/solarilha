@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ManageTenants from './components/admin/ManageTenants'; // Import admin components
 import UploadBills from './components/admin/UploadBills';
 import ReserveBBQ from './components/admin/ReserveBBQ';
+import ViewBills from './components/tenant/ViewBills'; // Import tenant component
 import { useAuth } from './contexts/AuthContext'; // Import useAuth to check status
 import { Box, CircularProgress } from '@mui/material'; // For initial loading state
 
@@ -71,9 +72,14 @@ function App() {
 
         {/* Protected Tenant Route */}
         <Route element={<ProtectedRoute allowedRoles={['tenant']} />}>
-          {/* TODO: Add nested routes for Tenant Dashboard similarly */}
-          <Route path="/tenant/dashboard" element={<TenantDashboard />} />
-          {/* Add other tenant-only routes here */}
+          {/* Wrap tenant routes within the TenantDashboard layout component */}
+          <Route path="/tenant" element={<TenantDashboard />}>
+             <Route path="bills" element={<ViewBills />} />
+             {/* <Route path="bbq" element={<TenantReserveBBQ />} /> */} {/* Placeholder for tenant BBQ */}
+             {/* Redirect base /tenant/dashboard to a default section, e.g., bills */}
+             <Route index element={<Navigate to="bills" replace />} />
+          </Route>
+            {/* Add other tenant-only routes here, nested under /tenant */}
         </Route>
 
         {/* Root path handler */}
