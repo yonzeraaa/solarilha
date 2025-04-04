@@ -12,11 +12,12 @@ serve(async (req: Request) => {
 
   try {
     // 1. Parse request body
-    const { email, password, fullName, blockNumber } = await req.json();
+    const { email, password, fullName, blockNumber, apartmentNumber } = await req.json(); // Add apartmentNumber
 
     // 2. Basic Input Validation
-    if (!email || !password || !fullName || !blockNumber) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: email, password, fullName, blockNumber' }), {
+    // Add apartmentNumber to validation
+    if (!email || !password || !fullName || !blockNumber || !apartmentNumber) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: email, password, fullName, blockNumber, apartmentNumber' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -69,9 +70,10 @@ serve(async (req: Request) => {
       .from('profiles')
       .insert({
         id: userId,
-        role: 'tenant', // Set role explicitly
+        role: 'tenant',
         full_name: fullName,
         block_number: blockNumber,
+        apartment_number: apartmentNumber, // Insert the new field
       });
 
     if (profileError) {

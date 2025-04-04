@@ -7,7 +7,6 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  // Grid, // Removed Grid import
   Select,
   MenuItem,
   InputLabel,
@@ -27,6 +26,7 @@ const RegisterTenantForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [blockNumber, setBlockNumber] = useState<string>('');
+  const [apartmentNumber, setApartmentNumber] = useState(''); // State for Apartment Number
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -41,15 +41,17 @@ const RegisterTenantForm: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    if (!fullName || !email || !password || !blockNumber) {
+    // Add apartmentNumber to validation
+    if (!fullName || !email || !password || !blockNumber || !apartmentNumber) {
       setError('Todos os campos são obrigatórios.');
       setLoading(false);
       return;
     }
 
     try {
+      // Include apartmentNumber in the body
       const { data, error: functionError } = await supabase.functions.invoke('create-tenant', {
-        body: { fullName, email, password, blockNumber },
+        body: { fullName, email, password, blockNumber, apartmentNumber },
       });
 
       if (functionError) {
@@ -66,11 +68,13 @@ const RegisterTenantForm: React.FC = () => {
       }
 
       console.log('Tenant creation response:', data);
-      setSuccess(`Inquilino ${fullName} (${email}) criado com sucesso!`);
+      setSuccess(`Inquilino ${fullName} (${email}, Bloco ${blockNumber}/${apartmentNumber}) criado com sucesso!`);
+      // Clear form on success
       setFullName('');
       setEmail('');
       setPassword('');
       setBlockNumber('');
+      setApartmentNumber(''); // Clear apartment number field
 
     } catch (catchError: any) {
       console.error('Unexpected error calling function:', catchError);
@@ -81,7 +85,7 @@ const RegisterTenantForm: React.FC = () => {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3, maxWidth: '600px', mx: 'auto' }}> {/* Center form */}
+    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3, maxWidth: '600px', mx: 'auto' }}>
       <Typography variant="h6" gutterBottom>
         Cadastrar Novo Inquilino
       </Typography>
@@ -89,7 +93,6 @@ const RegisterTenantForm: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      {/* Using Box with margin for spacing instead of Grid */}
       <Box sx={{ mb: 2 }}>
         <TextField
           required
@@ -104,7 +107,6 @@ const RegisterTenantForm: React.FC = () => {
         />
       </Box>
 
-      {/* Box for side-by-side email and password */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
         <TextField
           required
@@ -117,7 +119,7 @@ const RegisterTenantForm: React.FC = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
-          sx={{ flex: 1 }} // Allow fields to grow
+          sx={{ flex: 1 }}
         />
         <TextField
           required
@@ -130,28 +132,40 @@ const RegisterTenantForm: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
           helperText="O inquilino deverá alterar esta senha."
-          sx={{ flex: 1 }} // Allow fields to grow
+          sx={{ flex: 1 }}
         />
       </Box>
 
-      <Box sx={{ mb: 2 }}>
-         <FormControl fullWidth required disabled={loading}>
-           <InputLabel id="block-number-label">Bloco / Apartamento</InputLabel>
+      {/* Box for Block and Apartment Number */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+         <FormControl fullWidth required disabled={loading} sx={{ flex: 1 }}> {/* Make FormControl take half width */}
+           <InputLabel id="block-number-label">Bloco</InputLabel>
            <Select
              labelId="block-number-label"
              id="blockNumber"
              value={blockNumber}
-             label="Bloco / Apartamento"
+             label="Bloco" // Simplified label
              onChange={handleBlockChange}
            >
              <MenuItem value="" disabled>
-               <em>Selecione o Bloco/Apto</em>
+               <em>Selecione</em>
              </MenuItem>
              {blockNumbers.map((block) => (
                <MenuItem key={block} value={block}>{block}</MenuItem>
              ))}
            </Select>
          </FormControl>
+         <TextField
+            required
+            fullWidth
+            id="apartmentNumber"
+            label="Nº Apto" // Simplified label
+            name="apartmentNumber"
+            value={apartmentNumber}
+            onChange={(e) => setApartmentNumber(e.target.value)}
+            disabled={loading}
+            sx={{ flex: 1 }} // Make TextField take half width
+          />
       </Box>
 
       <Box sx={{ position: 'relative', mt: 3 }}>
@@ -160,7 +174,8 @@ const RegisterTenantForm: React.FC = () => {
           fullWidth
           variant="contained"
           color="primary"
-          disabled={loading}
+          // Update disabled check
+          disabled={loading || !fullName || !email || !password || !blockNumber || !apartmentNumber}
           sx={{ py: 1.2 }}
         >
           {loading ? 'Cadastrando...' : 'Cadastrar Inquilino'}

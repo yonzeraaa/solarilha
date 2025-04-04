@@ -50,21 +50,26 @@ const ReserveBBQ: React.FC = () => {
     setFetchLoading(true);
     setError(null);
     try {
-      // Fetch reservations and join with profiles table to get user name/block
+      // Fetch reservations - Temporarily remove profile join to isolate 400 error
+      console.log("Fetching reservations without profile join...");
       const { data, error: fetchError } = await supabase
         .from('reservations')
         .select(`
           id,
           reservation_date,
-          user_id,
-          profiles ( full_name, block_number )
-        `) // Fetch related profile data
+          user_id
+        `) // Select only base reservation fields
         .eq('resource_name', RESOURCE_NAME)
         .order('reservation_date', { ascending: true });
 
       if (fetchError) throw fetchError;
 
-      setReservations(data || []);
+      // We need to adjust the state type or mapping if we remove profiles temporarily
+      // For now, let's just log the raw data
+      console.log("Raw reservation data:", data);
+      // setReservations(data || []); // Cannot set directly without profiles
+      // Clear reservations for now to avoid type errors in rendering
+      setReservations([]);
 
     } catch (err: any) {
       console.error("Error fetching reservations:", err);
@@ -139,7 +144,8 @@ const ReserveBBQ: React.FC = () => {
                    >
                      <ListItemText
                        primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')}`}
-                       secondary={`Reservado por: ${res.profiles?.full_name || 'Usuário Desconhecido'} (${res.profiles?.block_number || 'Bloco?'})`}
+                       // Secondary info removed as profile data is not fetched currently
+                       // secondary={`Reservado por: ${res.profiles?.full_name || 'Usuário Desconhecido'} (${res.profiles?.block_number || 'Bloco?'})`}
                      />
                    </ListItem>
                    {index < reservations.length - 1 && <Divider component="li" />} {/* Add divider between items */}
