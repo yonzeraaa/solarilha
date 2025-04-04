@@ -9,10 +9,11 @@ import {
   Button,
   Link,
   Paper,
-  Avatar, // Added for icon
-  CssBaseline // Ensure consistent baseline
+  Avatar,
+  CssBaseline,
+  Grid // Using Grid for layout flexibility
 } from '@mui/material';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'; // Import lock icon
+import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined'; // Changed icon
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -31,93 +32,89 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    // Use Container to constrain width and center, Box for flex layout
-    <Container component="main" maxWidth="xs" sx={{ display: 'flex', alignItems: 'center', minHeight: '100vh' }}>
-      <CssBaseline /> {/* Ensure baseline styles are applied */}
+    <Container component="main" maxWidth="sm" sx={{ display: 'flex', alignItems: 'center', minHeight: '100vh' }}>
+      <CssBaseline />
       <Paper
-        elevation={6}
+        elevation={12} // Increased elevation for more depth
         sx={{
-          padding: 4,
+          padding: { xs: 3, sm: 5 }, // Responsive padding
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           width: '100%',
-          backgroundColor: 'rgba(66, 66, 66, 0.9)', // Dark Gray with 90% opacity
-          // Add backdrop filter for a frosted glass effect (optional, browser support varies)
-          // backdropFilter: 'blur(5px)',
+          borderRadius: 3, // Slightly less rounded corners
+          // backgroundColor is set via theme MuiPaper override
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}> {/* Light Gray background for avatar */}
-          {/* Set icon color to contrast with light gray avatar bg */}
-          <LockOutlinedIcon sx={{ color: 'background.paper' }} />
+        <Avatar sx={{ m: 1, width: 56, height: 56 }}> {/* Larger Avatar */}
+          {/* Icon color is set via theme MuiAvatar override */}
+          <LockPersonOutlinedIcon fontSize="large" />
         </Avatar>
-        <Typography component="h1" variant="h5" sx={{ mb: 3 }}> {/* Increased margin bottom */}
-          Solar da Ilha
+        <Typography component="h1" variant="h5" sx={{ mb: 4, color: 'text.primary' }}> {/* Increased margin */}
+          Acessar Solar da Ilha
         </Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
           <TextField
-            margin="normal" // Keep normal margin for spacing
+            margin="normal"
             required
             fullWidth
             id="email"
-            label="Endereço de Email"
+            label="Seu Email"
             name="email"
             autoComplete="email"
             autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            // Ensure input/label colors are light against dark paper
-            InputLabelProps={{ sx: { color: 'text.secondary' } }}
-            InputProps={{ sx: { color: 'text.primary' } }}
-            // variant="outlined" // Default is set in theme
+            // Styling handled by theme overrides
           />
           <TextField
             margin="normal"
             required
             fullWidth
             name="password"
-            label="Senha"
+            label="Sua Senha"
             type="password"
             id="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            // Ensure input/label colors are light against dark paper
-            InputLabelProps={{ sx: { color: 'text.secondary' } }}
-            InputProps={{ sx: { color: 'text.primary' } }}
-            // variant="outlined" // Default is set in theme
-            sx={{ mb: 2 }} // Add some margin below password
+            // Styling handled by theme overrides
+            sx={{ mb: 1 }} // Reduced margin below password
           />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mb: 2 }}>
+          {/* Replaced Grid with Box/Flexbox due to persistent TS errors */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, mb: 2 }}>
             <FormControlLabel
               control={
                 <Checkbox
                   value="remember"
-                  color="primary" // Use primary (teal) color for checkbox
+                  // Color handled by theme override
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   size="small"
                 />
               }
-              label={<Typography variant="body2">Lembrar-me</Typography>}
+              label={<Typography variant="body2" sx={{ color: 'text.secondary' }}>Lembrar Acesso</Typography>}
+              sx={{ mr: 'auto' }} // Keep checkbox pushed left
             />
-             <Link href="#" variant="body2"> {/* color="secondary" is set in theme */}
-               Esqueceu a sua senha?
-             </Link>
+            <Link href="#" variant="body2"> {/* Color handled by theme override */}
+              Esqueceu a senha?
+            </Link>
           </Box>
 
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            color="primary" // Use primary (teal) color
-            sx={{ mt: 2, mb: 2, py: 1.2 }} // Adjusted padding/margins
+            color="primary" // Use primary (gold) color
+            sx={{ mt: 3, mb: 2, py: 1.5 }} // Adjusted padding/margins
           >
             Entrar
           </Button>
 
-          <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 3 }}>
-            Se você ainda não possui as credenciais cadastradas, por favor entre em contato com algum administrador.
+          <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 4 }}>
+            Se você ainda não possui as credenciais cadastradas,
+            <br />
+            por favor entre em contato com um administrador.
           </Typography>
         </Box>
       </Paper>

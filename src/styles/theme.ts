@@ -1,42 +1,45 @@
 import { createTheme } from '@mui/material/styles';
 
-// Define the custom color palette for dark mode (Teal & Amber)
+// Premium Dark Theme: Deep Navy/Charcoal + Muted Gold
 const theme = createTheme({
   palette: {
-    mode: 'light', // Switch to light mode
+    mode: 'dark',
     primary: {
-      main: '#1976d2', // Keep Vibrant Blue
-      contrastText: '#ffffff',
+      main: '#d4af37', // Muted Gold
+      contrastText: '#1f1f1f', // Dark text for contrast on gold
     },
     secondary: {
-      main: '#e0e0e0', // Lighter Gray for accents on dark paper
-      contrastText: '#000000',
+      main: '#90a4ae', // Cool Gray
+      contrastText: '#1f1f1f',
     },
     background: {
-      default: '#e3f2fd', // Light Blue background for the page
-      paper: '#424242',   // Dark Gray ("cinza chumbo") for Paper elements (forms)
+      // Gradient will be applied via GlobalStyles
+      default: '#1a237e', // Fallback default background (start of gradient)
+      paper: '#2c3e50',   // Dark Slate for Paper elements
     },
-    // Text colors optimized for the dark paper background
     text: {
-      primary: '#f5f5f5',   // Very Light Gray for primary text on dark paper
-      secondary: '#bdbdbd', // Light Gray for secondary text on dark paper
+      primary: '#eceff1',   // Off-white
+      secondary: '#b0bec5', // Lighter Gray
     },
+    divider: '#455a64', // Slightly visible divider color
   },
   typography: {
-    // Customize font families, sizes, etc. here if needed
-    // fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif', // Modern sans-serif
     h5: {
-      fontWeight: 600, // Make the title slightly bolder
-    }
+      fontWeight: 700, // Bolder title
+      letterSpacing: '0.5px',
+    },
+    button: {
+      textTransform: 'none', // Keep button text case as defined
+      fontWeight: 600,
+    },
   },
   components: {
-    // Example component overrides for a more refined look
-    MuiPaper: { // Ensure Paper uses the dark background and light text
+    MuiPaper: {
       styleOverrides: {
         root: {
-          // backgroundColor: '#424242', // Removed explicit background override
-          color: '#f5f5f5', // Keep explicit light primary text color for dark paper
-          // Slightly more rounded corners for the login box
+          backgroundImage: 'none', // Ensure no accidental background images override color
+          backgroundColor: '#2c3e50', // Dark Slate
           borderRadius: 12,
         }
       }
@@ -44,28 +47,76 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8, // Slightly rounded buttons
-          textTransform: 'none', // Prevent uppercase transform
-          padding: '10px 20px', // Slightly larger button padding
+          borderRadius: 8,
+          padding: '10px 24px', // Generous padding
+          boxShadow: 'none', // Remove default elevation shadow if needed
+          '&:hover': {
+            boxShadow: 'none', // Prevent shadow on hover if desired
+          }
         },
       },
+      defaultProps: {
+        disableElevation: true, // Flat button style
+      }
     },
     MuiTextField: {
       defaultProps: {
-        variant: 'outlined', // Use outlined variant for text fields
+        variant: 'outlined',
       },
       styleOverrides: {
         root: {
-          // Add some margin bottom by default
-          marginBottom: '1rem',
+          '& label.Mui-focused': {
+            color: '#d4af37', // Gold label when focused
+          },
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: '#455a64', // Subtle border color
+            },
+            '&:hover fieldset': {
+              borderColor: '#90a4ae', // Gray border on hover
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#d4af37', // Gold border when focused
+            },
+          },
+        },
+      },
+    },
+    MuiOutlinedInput: { // Style the input field itself
+      styleOverrides: {
+        root: {
+          borderRadius: 8, // Match button radius
+          color: '#eceff1', // Input text color
+          backgroundColor: 'rgba(0, 0, 0, 0.1)', // Slightly darker input background
+        },
+        input: {
+          padding: '14px 16px', // Adjust input padding
         }
       }
     },
-    MuiLink: { // Links will be on the dark paper, use a light color
+    MuiLink: {
       styleOverrides: {
         root: {
-          color: '#90caf9', // Lighter blue suitable for dark background
+          color: '#d4af37', // Gold links
           fontWeight: 500,
+        }
+      }
+    },
+    MuiCheckbox: {
+      styleOverrides: {
+        root: {
+          color: '#90a4ae', // Gray checkbox default
+          '&.Mui-checked': {
+            color: '#d4af37', // Gold when checked
+          },
+        }
+      }
+    },
+    MuiAvatar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#d4af37', // Gold avatar background
+          color: '#1f1f1f', // Dark icon color
         }
       }
     }
