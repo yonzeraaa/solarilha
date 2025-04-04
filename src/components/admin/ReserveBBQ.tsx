@@ -11,7 +11,8 @@ import {
   IconButton,
   Paper,
   Divider,
-  Tooltip
+  Tooltip,
+  Skeleton // Import Skeleton
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
@@ -21,7 +22,7 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Interface matching the structure returned by the RPC function
+// Interface remains the same...
 interface ReservationWithDetails {
   id: number;
   reservation_date: string;
@@ -29,86 +30,84 @@ interface ReservationWithDetails {
   full_name: string | null;
   block_number: string | null;
   apartment_number: string | null;
-  start_time: string; // Add time fields from RPC result
+  start_time: string;
   end_time: string;
 }
 
-const RESOURCE_NAME = 'barbecue_area'; // Still needed for delete logic if kept
+// Skeleton Row for Reservations
+const SkeletonRow: React.FC = () => (
+    <ListItem
+        secondaryAction={
+            <Skeleton variant="circular" width={24} height={24} />
+        }
+        divider
+    >
+        <ListItemText
+            primary={<Skeleton variant="text" width="60%" />}
+            secondary={<Skeleton variant="text" width="80%" />}
+        />
+    </ListItem>
+);
+
+
+const RESOURCE_NAME = 'barbecue_area';
 
 const ReserveBBQ: React.FC = () => {
-  const [reservations, setReservations] = useState<ReservationWithDetails[]>([]); // Use new interface
-  const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
+  const [reservations, setReservations] = useState<ReservationWithDetails[]>([]);
+  const [loading, setLoading] = useState(false); // For delete action
+  const [fetchLoading, setFetchLoading] = useState(true); // Keep this loading state
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Function to fetch reservations using the RPC function
+  // fetchReservations remains the same...
   const fetchReservations = async () => {
-    setFetchLoading(true);
+    // setFetchLoading(true); // Already true initially
     setError(null);
     try {
-      console.log("Calling RPC function get_bbq_reservations_with_details...");
-      // Call the SQL function directly
-      const { data, error: rpcError } = await supabase.rpc(
-        'get_bbq_reservations_with_details'
-        // Pass arguments here if the function required them, e.g., { arg_name: value }
-      );
-
+      const { data, error: rpcError } = await supabase.rpc('get_bbq_reservations_with_details');
       if (rpcError) throw rpcError;
-
-      console.log("Fetched reservation data via RPC:", data);
-      setReservations(data || []); // Set state with data returned from function
-
+      setReservations(data || []);
     } catch (err: any) {
       console.error("Error fetching reservations via RPC:", err);
       setError(`Erro ao carregar reservas: ${err.message}`);
-      setReservations([]);
     } finally {
-      setFetchLoading(false);
+      setFetchLoading(false); // Set loading false after fetch attempt
     }
   };
 
-  // Fetch reservations on mount
   useEffect(() => {
     fetchReservations();
   }, []);
 
-   // Handle deleting a reservation (still uses direct table access, which is fine for admins)
+  // handleDelete remains the same...
    const handleDelete = async (reservationId: number) => {
      if (!window.confirm("Tem certeza que deseja cancelar esta reserva?")) return;
-     setLoading(true);
-     setError(null);
-     setSuccess(null);
+     setLoading(true); setError(null); setSuccess(null);
      try {
-       const { error: deleteError } = await supabase
-         .from('reservations')
-         .delete()
-         .eq('id', reservationId);
-
+       const { error: deleteError } = await supabase.from('reservations').delete().eq('id', reservationId);
        if (deleteError) throw deleteError;
-
-       setSuccess("Reserva cancelada com sucesso.");
-       fetchReservations(); // Refresh list
-
-     } catch (err: any) {
-       console.error("Error deleting reservation:", err);
-       setError(`Erro ao cancelar reserva: ${err.message}`);
-     } finally {
-       setLoading(false);
-     }
+       setSuccess("Reserva cancelada com sucesso."); fetchReservations();
+     } catch (err: any) { setError(`Erro ao cancelar reserva: ${err.message}`); }
+     finally { setLoading(false); }
    };
+
+  // Removed initial loading check here
 
   return (
     <Box>
       <Typography variant="h5" gutterBottom>Consultar Reservas da Churrasqueira</Typography>
-
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
       <Paper sx={{ p: { xs: 1, sm: 2 } }}>
         <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
            {fetchLoading ? (
-             <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress /></Box>
+             // Show Skeleton list items while loading
+             <List dense>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+             </List>
            ) : reservations.length === 0 ? (
              <Typography align="center" color="text.secondary" sx={{ p: 2 }}>Nenhuma reserva encontrada.</Typography>
            ) : (
@@ -119,14 +118,13 @@ const ReserveBBQ: React.FC = () => {
                      secondaryAction={
                        <Tooltip title="Cancelar Reserva">
                          <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(res.id)} disabled={loading}>
-                           <DeleteIcon fontSize="small" />
+                           {loading && reservations.find(r => r.id === res.id) ? <CircularProgress size={20} color="inherit"/> : <DeleteIcon fontSize="small" />} {/* Show spinner on specific item being deleted */}
                          </IconButton>
                        </Tooltip>
                      }
                    >
                      <ListItemText
-                       primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')} (${res.start_time?.substring(0,5) || '?'} - ${res.end_time?.substring(0,5) || '?'})`} // Safely handle potential null times
-                       // Display data directly from the RPC result object
+                       primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')} (${res.start_time?.substring(0,5) || '?'} - ${res.end_time?.substring(0,5) || '?'})`}
                        secondary={`Reservado por: ${res.full_name || 'Usuário Desconhecido'} (${res.block_number || '?'}/${res.apartment_number || '?'})`}
                      />
                    </ListItem>

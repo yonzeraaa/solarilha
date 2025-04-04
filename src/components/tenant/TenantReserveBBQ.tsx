@@ -12,6 +12,7 @@ import {
   ListItemText,
   Paper,
   Divider,
+  Skeleton, // Import Skeleton
   Chip,
   Tooltip,
   IconButton,
@@ -38,7 +39,22 @@ interface Reservation {
   reservation_date: string;
   user_id: string;
   start_time: string; // e.g., "09:00:00"
-  end_time: string;   // e.g., "12:00:00"
+  end_time: string;
+}
+
+// Skeleton Row for My Reservations List
+const MyReservationSkeletonRow: React.FC = () => (
+    <ListItem
+        secondaryAction={
+            <Skeleton variant="circular" width={24} height={24} />
+        }
+        divider
+    >
+        <ListItemText
+            primary={<Skeleton variant="text" width="60%" />}
+        />
+    </ListItem>
+);
 }
 
 const RESOURCE_NAME = 'barbecue_area';
@@ -302,7 +318,11 @@ const TenantReserveBBQ: React.FC = () => {
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle1" gutterBottom>Minhas Reservas</Typography>
             {fetchLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress /></Box>
+              // Show Skeleton list while loading
+              <List dense>
+                  <MyReservationSkeletonRow />
+                  <MyReservationSkeletonRow />
+              </List>
             ) : myReservations.length === 0 ? (
               <Typography align="center" color="text.secondary" sx={{ p: 2 }}>Você não possui reservas.</Typography>
             ) : (

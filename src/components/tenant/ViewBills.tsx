@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import dayjs from 'dayjs'; // Import dayjs
+import dayjs from 'dayjs';
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -13,11 +13,13 @@ import {
   ListItemIcon,
   IconButton,
   Tooltip,
-  Paper // Added Paper for styling list
+  Paper,
+  Skeleton // Import Skeleton
 } from '@mui/material';
-import DescriptionIcon from '@mui/icons-material/Description'; // Icon for PDF
+import DescriptionIcon from '@mui/icons-material/Description';
 import DownloadIcon from '@mui/icons-material/Download';
 
+// Interface remains the same...
 interface Bill {
   id: number;
   file_path: string;
@@ -25,103 +27,101 @@ interface Bill {
   uploaded_at: string;
 }
 
+// Skeleton Row for Bills List
+const SkeletonRow: React.FC = () => (
+    <ListItem
+        secondaryAction={
+            <Skeleton variant="circular" width={24} height={24} />
+        }
+    >
+        <ListItemIcon>
+            <Skeleton variant="circular" width={24} height={24} />
+        </ListItemIcon>
+        <ListItemText
+            primary={<Skeleton variant="text" width="50%" />}
+            secondary={<Skeleton variant="text" width="30%" />}
+        />
+    </ListItem>
+);
+
+
 const ViewBills: React.FC = () => {
   const { user } = useAuth();
   const [bills, setBills] = useState<Bill[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Keep this loading state
   const [error, setError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState<number | null>(null); // Track which bill is downloading
+  const [downloading, setDownloading] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchBills = async () => {
-      if (!user) return; // Should not happen if protected route works
-
-      setLoading(true);
+      if (!user) return;
+      // setLoading(true); // Already true initially
       setError(null);
       try {
-        // Fetch bills for the current tenant using RLS
         const { data, error: fetchError } = await supabase
           .from('bills')
           .select('id, file_path, reference_period, uploaded_at')
-          .eq('tenant_id', user.id) // RLS policy allows this
-          .order('reference_period', { ascending: false }); // Show newest first
+          .eq('tenant_id', user.id)
+          .order('reference_period', { ascending: false });
 
         if (fetchError) throw fetchError;
-
         setBills(data || []);
-
       } catch (err: any) {
         console.error("Error fetching bills:", err);
         setError(`Erro ao carregar boletos: ${err.message}`);
       } finally {
-        setLoading(false);
+        setLoading(false); // Set loading false after fetch attempt
       }
     };
-
     fetchBills();
-  }, [user]); // Refetch if user changes (shouldn't happen within dashboard)
+  }, [user]);
 
+  // handleDownload remains the same...
   const handleDownload = async (bill: Bill) => {
-    setDownloading(bill.id);
-    setError(null);
+    setDownloading(bill.id); setError(null);
     try {
-      const { data, error: downloadError } = await supabase.storage
-        .from('tenant-bills') // Bucket name
-        .download(bill.file_path); // Path stored in the bills table
-
+      const { data, error: downloadError } = await supabase.storage.from('tenant-bills').download(bill.file_path);
       if (downloadError) throw downloadError;
-
-      // Create a URL for the downloaded blob and trigger download
       const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
-      // Extract filename from path or use a generic name
       const filename = bill.file_path.split('/').pop() || `boleto_${bill.reference_period || bill.id}.pdf`;
       link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-
-      // Clean up
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-    } catch (err: any) {
-      console.error("Error downloading bill:", err);
-      setError(`Erro ao baixar boleto: ${err.message}`);
-    } finally {
-      setDownloading(null);
-    }
+      document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+    } catch (err: any) { setError(`Erro ao baixar boleto: ${err.message}`); }
+    finally { setDownloading(null); }
   };
 
-
-  if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}><CircularProgress /></Box>;
-  }
+  // Removed initial loading check here
 
   return (
     <Box>
       <Typography variant="h5" gutterBottom>Meus Boletos</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      {bills.length === 0 && !loading && !error && (
-        <Typography color="text.secondary">Nenhum boleto disponível no momento.</Typography>
-      )}
-
-      {bills.length > 0 && (
-         <Paper sx={{ mt: 2 }}> {/* Wrap list in Paper */}
+      {loading ? (
+          // Show Skeleton list while loading
+          <Paper sx={{ mt: 2 }}>
+              <List>
+                  <SkeletonRow />
+                  <SkeletonRow />
+                  <SkeletonRow />
+              </List>
+          </Paper>
+      ) : bills.length === 0 ? (
+          // Show message if no bills and not loading
+          <Typography color="text.secondary" sx={{ mt: 2 }}>Nenhum boleto disponível no momento.</Typography>
+      ) : (
+          // Render actual bill list
+         <Paper sx={{ mt: 2 }}>
             <List>
               {bills.map((bill) => (
                 <ListItem
                   key={bill.id}
                   secondaryAction={
                     <Tooltip title="Baixar Boleto (PDF)">
-                      <span> {/* Span needed for disabled state */}
-                        <IconButton
-                            edge="end"
-                            aria-label="download"
-                            onClick={() => handleDownload(bill)}
-                            disabled={downloading === bill.id}
-                        >
+                      <span>
+                        <IconButton edge="end" aria-label="download" onClick={() => handleDownload(bill)} disabled={downloading === bill.id} >
                           {downloading === bill.id ? <CircularProgress size={20} /> : <DownloadIcon />}
                         </IconButton>
                       </span>

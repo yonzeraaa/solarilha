@@ -11,6 +11,7 @@ import {
   Select,
   MenuItem,
   InputLabel,
+  Skeleton, // Import Skeleton
   FormControl,
   SelectChangeEvent,
   Input // For file input styling
@@ -167,14 +168,21 @@ const UploadBillForm: React.FC = () => {
           label="Selecionar Inquilino"
           onChange={handleTenantChange}
         >
+          {/* Show skeleton or actual items */}
           {fetchLoading ? (
-            <MenuItem value="" disabled><em>Carregando inquilinos...</em></MenuItem>
+             // Display skeleton items while loading tenants
+             <>
+                <MenuItem value="" disabled><em>Carregando...</em></MenuItem>
+                <MenuItem disabled sx={{ py: 0.5 }}><Skeleton variant="text" width="80%" /></MenuItem>
+                <MenuItem disabled sx={{ py: 0.5 }}><Skeleton variant="text" width="70%" /></MenuItem>
+             </>
           ) : tenants.length === 0 ? (
              <MenuItem value="" disabled><em>Nenhum inquilino encontrado.</em></MenuItem>
           ) : (
+            // Render actual tenant MenuItems
             tenants.map((tenant) => (
               <MenuItem key={tenant.id} value={tenant.id}>
-                {tenant.full_name} ({tenant.block_number})
+                {tenant.full_name} ({tenant.block_number}/{tenant.apartment_number || '?'}) {/* Added apartment number */}
               </MenuItem>
             ))
           )}
