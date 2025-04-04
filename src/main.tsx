@@ -2,9 +2,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import GlobalStyles from '@mui/material/GlobalStyles'; // Import GlobalStyles
-import theme from './styles/theme'; // Import the custom theme
-import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
+import GlobalStyles from '@mui/material/GlobalStyles';
+import theme from './styles/theme';
+import { AuthProvider } from './contexts/AuthContext'; // Keep only one import
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+// Removed duplicate AuthProvider import
 import App from './App.tsx';
 
 createRoot(document.getElementById('root')!).render(
@@ -22,8 +25,10 @@ createRoot(document.getElementById('root')!).render(
           },
         }}
       />
-      <AuthProvider> {/* Wrap App with AuthProvider */}
-        <App />
+      <AuthProvider>
+        <LocalizationProvider dateAdapter={AdapterDayjs}> {/* Wrap with LocalizationProvider */}
+          <App />
+        </LocalizationProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
