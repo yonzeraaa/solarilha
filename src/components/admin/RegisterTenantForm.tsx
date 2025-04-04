@@ -93,7 +93,7 @@ const RegisterTenantForm: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      <Box sx={{ mb: 2 }}>
+      {/* Removed Box wrapper */}
         <TextField
           required
           fullWidth
@@ -105,9 +105,10 @@ const RegisterTenantForm: React.FC = () => {
           onChange={(e) => setFullName(e.target.value)}
           disabled={loading}
         />
-      </Box>
+      {/* Remove Box wrapper */}
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+      {/* Flex Box for side-by-side fields */}
+      <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
         <TextField
           required
           fullWidth
@@ -136,9 +137,9 @@ const RegisterTenantForm: React.FC = () => {
         />
       </Box>
 
-      {/* Box for Block and Apartment Number */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-         <FormControl fullWidth required disabled={loading} sx={{ flex: 1 }}> {/* Make FormControl take half width */}
+      {/* Flex Box for Block and Apartment Number */}
+      <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+         <FormControl fullWidth required disabled={loading} sx={{ flex: 1 }} margin="normal"> {/* Keep margin on FormControl */}
            <InputLabel id="block-number-label">Bloco</InputLabel>
            <Select
              labelId="block-number-label"
@@ -164,7 +165,8 @@ const RegisterTenantForm: React.FC = () => {
             value={apartmentNumber}
             onChange={(e) => setApartmentNumber(e.target.value)}
             disabled={loading}
-            sx={{ flex: 1 }} // Make TextField take half width
+            sx={{ flex: 1 }}
+            margin="normal" // Add default margin
           />
       </Box>
 

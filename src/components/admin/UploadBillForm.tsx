@@ -158,7 +158,7 @@ const UploadBillForm: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      <FormControl fullWidth required sx={{ mb: 2 }} disabled={loading || fetchLoading}>
+      <FormControl fullWidth required margin="normal" disabled={loading || fetchLoading}> {/* Use margin prop */}
         <InputLabel id="tenant-select-label">Selecionar Inquilino</InputLabel>
         <Select
           labelId="tenant-select-label"
@@ -194,7 +194,7 @@ const UploadBillForm: React.FC = () => {
         placeholder="YYYY-MM"
       />
 
-      <FormControl fullWidth sx={{ mb: 2 }}>
+      <FormControl fullWidth margin="normal"> {/* Use margin prop */}
          <InputLabel shrink htmlFor="bill-file-input" sx={{ position: 'static', transform: 'none', mb: 1 }}>
            Arquivo PDF do Boleto
          </InputLabel>

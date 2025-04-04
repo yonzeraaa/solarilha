@@ -29,10 +29,9 @@ interface ReservationWithDetails {
   full_name: string | null;
   block_number: string | null;
   apartment_number: string | null;
+  start_time: string; // Add time fields from RPC result
+  end_time: string;
 }
-
-// No longer needed as RPC returns combined data
-// interface ReservationWithUser { ... }
 
 const RESOURCE_NAME = 'barbecue_area'; // Still needed for delete logic if kept
 
@@ -126,7 +125,7 @@ const ReserveBBQ: React.FC = () => {
                      }
                    >
                      <ListItemText
-                       primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')}`}
+                       primary={`${dayjs(res.reservation_date).format('DD/MM/YYYY')} (${res.start_time?.substring(0,5) || '?'} - ${res.end_time?.substring(0,5) || '?'})`} // Safely handle potential null times
                        // Display data directly from the RPC result object
                        secondary={`Reservado por: ${res.full_name || 'Usuário Desconhecido'} (${res.block_number || '?'}/${res.apartment_number || '?'})`}
                      />

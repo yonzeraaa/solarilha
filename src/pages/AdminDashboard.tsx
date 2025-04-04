@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, useNavigate } from 'react-router-dom'; // Import Outlet for nested routes
+import { Outlet, NavLink } from 'react-router-dom'; // Import NavLink, remove useLocation if unused
 import {
   Box,
   Drawer,
@@ -9,7 +9,7 @@ import {
   Typography,
   Divider,
   ListItem,
-  ListItemButton,
+  ListItemButton, // Re-add ListItemButton import
   ListItemIcon,
   ListItemText,
   CssBaseline,
@@ -19,14 +19,16 @@ import {
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt'; // Icon for Tenant Management
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'; // Icon for Bills
 import OutdoorGrillIcon from '@mui/icons-material/OutdoorGrill'; // Icon for BBQ
-import LogoutIcon from '@mui/icons-material/Logout'; // Icon for Logout
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth for logout
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '@mui/material/styles'; // Import useTheme
 
 const drawerWidth = 240;
 
 const AdminDashboard: React.FC = () => {
   const { signOut } = useAuth();
-  const navigate = useNavigate(); // For navigation on logout
+  const theme = useTheme(); // Get theme object
+  // const navigate = useNavigate(); // No longer needed for sidebar navigation
 
   const handleLogout = async () => {
     await signOut();
@@ -46,7 +48,7 @@ const AdminDashboard: React.FC = () => {
       <CssBaseline />
       <AppBar
         position="fixed"
-        sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px`, backgroundColor: 'background.paper' }} // Use paper color for AppBar
+        sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }} // Background handled by theme
         elevation={1} // Subtle elevation
       >
         <Toolbar>
@@ -67,9 +69,9 @@ const AdminDashboard: React.FC = () => {
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            backgroundColor: 'background.paper', // Consistent background
+            // backgroundColor: 'background.paper', // Handled by theme
             borderRight: '1px solid', // Use divider color from theme
-            borderColor: 'divider'
+            // borderColor: 'divider' // Handled by theme
           },
         }}
         variant="permanent"
@@ -78,20 +80,48 @@ const AdminDashboard: React.FC = () => {
         <Toolbar>
            {/* Optional: Add Logo or Title here */}
            <Typography variant="h6" noWrap component="div" sx={{ color: 'primary.main' }}> {/* Use primary color */}
-             Solar Ilha
+             Condomínio Solar da Ilha
            </Typography>
         </Toolbar>
         <Divider />
         <List>
           {menuItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              {/* TODO: Use NavLink from react-router-dom for active styling */}
-              <ListItemButton onClick={() => navigate(item.path)}>
-                <ListItemIcon sx={{ color: 'text.secondary' }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.text} sx={{ color: 'text.primary' }}/>
-              </ListItemButton>
+            <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
+              <NavLink
+                to={item.path}
+                style={({ isActive }) => ({ // Apply styles based on isActive
+                  textDecoration: 'none',
+                  display: 'block',
+                  color: isActive ? theme.palette.primary.main : theme.palette.text.primary, // Use theme colors
+                  backgroundColor: isActive ? theme.palette.action.selected : 'transparent', // Highlight background when active
+                  // Add other styles like font weight if desired
+                  // fontWeight: isActive ? 'bold' : 'normal',
+                })}
+              >
+                {/* Use ListItemButton purely for styling/layout inside NavLink */}
+                <ListItemButton
+                   sx={{
+                     minHeight: 48,
+                     justifyContent: 'initial',
+                     px: 2.5,
+                     '&:hover': { // Keep hover effect consistent
+                        backgroundColor: theme.palette.action.hover,
+                     }
+                   }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: 3,
+                      justifyContent: 'center',
+                      color: 'inherit' // Inherit color from NavLink
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} sx={{ opacity: 1, color: 'inherit' }} />
+                </ListItemButton>
+              </NavLink>
             </ListItem>
           ))}
         </List>
@@ -99,7 +129,7 @@ const AdminDashboard: React.FC = () => {
       </Drawer>
       <Box
         component="main"
-        sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3, minHeight: '100vh' }} // Use default background for content area
+        sx={{ flexGrow: 1, bgcolor: 'background.default', p: { xs: 2, sm: 3 }, minHeight: '100vh' }} // Adjusted padding
       >
         <Toolbar /> {/* Spacer for AppBar */}
         {/* Nested routes will render here */}

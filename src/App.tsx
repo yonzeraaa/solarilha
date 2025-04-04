@@ -7,7 +7,8 @@ import ManageTenants from './components/admin/ManageTenants'; // Import admin co
 import UploadBills from './components/admin/UploadBills';
 import ReserveBBQ from './components/admin/ReserveBBQ'; // Admin version
 import TenantReserveBBQ from './components/tenant/TenantReserveBBQ'; // Import tenant version
-import ViewBills from './components/tenant/ViewBills'; // Import tenant component
+import ViewBills from './components/tenant/ViewBills';
+import ChangePasswordForm from './components/tenant/ChangePasswordForm'; // Import change password form
 import { useAuth } from './contexts/AuthContext'; // Import useAuth to check status
 import { Box, CircularProgress } from '@mui/material'; // For initial loading state
 
@@ -76,7 +77,8 @@ function App() {
           {/* Wrap tenant routes within the TenantDashboard layout component */}
           <Route path="/tenant" element={<TenantDashboard />}>
              <Route path="bills" element={<ViewBills />} />
-             <Route path="bbq" element={<TenantReserveBBQ />} /> {/* Add route for tenant BBQ */}
+             <Route path="bbq" element={<TenantReserveBBQ />} />
+             <Route path="change-password" element={<ChangePasswordForm />} /> {/* Add route for change password */}
              {/* Redirect base /tenant/dashboard to a default section, e.g., bills */}
              <Route index element={<Navigate to="bills" replace />} />
           </Route>

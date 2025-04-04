@@ -104,7 +104,7 @@ const LoginPage: React.FC = () => {
           <LockPersonOutlinedIcon fontSize="large" sx={{ color: 'background.paper' }} />
         </Avatar>
         <Typography component="h1" variant="h5" sx={{ mb: 4, color: 'text.primary' }}>
-          Acessar Plataforma
+          Login - Condomínio Solar da Ilha
         </Typography>
 
         {error && (
